@@ -10,8 +10,8 @@ import { isAdminUser } from '@/lib/admin';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Workout Challenge 2026',
-  description: 'Join the 3-month workout challenge (Jan 1–Mar 31, 2026).'
+  title: 'Workout Challenge',
+  description: 'Join weekly workout challenges with simple completion check-ins.'
 };
 
 export default async function RootLayout({
@@ -41,7 +41,7 @@ export default async function RootLayout({
             <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
               <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
                 <Link href="/" className="text-lg font-semibold text-primary">
-                  Workout Challenge 2026
+                  Workout Challenge
                 </Link>
                 <div className="flex items-center gap-4">
                   <nav className="flex items-center gap-4 text-sm font-medium text-slate-700">
@@ -62,7 +62,7 @@ export default async function RootLayout({
             </main>
             <footer className="border-t border-slate-200 bg-white/80">
               <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-600">
-                Built for the Jan–Mar 2026 workout challenge. Privacy-first, human-reviewed verification.
+                Built for recurring workout challenges. Privacy-first, human-reviewed verification.
               </div>
             </footer>
           </div>

@@ -14,7 +14,7 @@ export default async function HomePage() {
     <div className="mx-auto max-w-6xl px-4 py-12">
       <section className="grid gap-6 rounded-2xl bg-gradient-to-r from-primary/90 to-accent/80 p-8 text-white shadow-lg lg:grid-cols-2">
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold lg:text-4xl">2026 Workout Challenge</h1>
+          <h1 className="text-3xl font-bold lg:text-4xl">Workout Challenge</h1>
           <p className="text-lg text-white/90">
             13 weeks. Simple weekly check-ins. Light admin oversight. Stay consistent from Jan 1 to Mar 31, 2026.
           </p>

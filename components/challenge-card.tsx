@@ -18,7 +18,7 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
   if (!challenge) {
     return (
       <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-slate-600">The first challenge goes live on Jan 1, 2026.</p>
+        <p className="text-slate-600">No challenge is published yet. Create one to get started.</p>
       </div>
     );
   }

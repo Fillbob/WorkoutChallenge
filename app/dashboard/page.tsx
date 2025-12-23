@@ -115,8 +115,8 @@ export default async function DashboardPage() {
   const { data: currentChallenge } = await supabase
     .from('challenges')
     .select('*')
-    .lte('start_at', new Date().toISOString())
-    .gte('end_date', new Date().toISOString())
+    .order('start_date', { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   const { data: submissions } = await supabase
