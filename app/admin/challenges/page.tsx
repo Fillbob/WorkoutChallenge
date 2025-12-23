@@ -2,8 +2,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { getServerClient } from '@/lib/supabase/server';
 import { isAdminUser } from '@/lib/admin';
+import { ChallengeForm } from './challenge-form';
 
-async function createChallenge(formData: FormData) {
+async function createChallenge(_: unknown, formData: FormData) {
   'use server';
   const supabase = getServerClient();
   const {
@@ -30,8 +31,31 @@ async function createChallenge(formData: FormData) {
     created_by: user.id
   };
 
-  await supabase.from('challenges').upsert(payload);
+  const { error } = await supabase.from('challenges').upsert(payload);
+
+  if (error) {
+    console.error('Failed to upsert challenge', {
+      context: 'createChallenge',
+      error: error.message,
+      details: error.details,
+      hint: error.hint,
+      code: error.code,
+      payload
+    });
+    return {
+      status: 'error',
+      message: 'Supabase rejected the challenge payload.',
+      details: `${error.code ?? 'unknown'}: ${error.message}`
+    } as const;
+  }
+
+  console.info('Challenge upsert succeeded', {
+    context: 'createChallenge',
+    payload
+  });
+
   revalidatePath('/admin/challenges');
+  return { status: 'success', message: 'Challenge saved successfully.' } as const;
 }
 
 export default async function ChallengesAdminPage() {
@@ -55,56 +79,7 @@ export default async function ChallengesAdminPage() {
         <h1 className="text-2xl font-semibold text-slate-900">Challenges</h1>
       </div>
 
-      <form action={createChallenge} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-semibold">Create / update challenge</h2>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-medium text-slate-800">
-            Week index
-            <input name="week_index" type="number" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" required />
-          </label>
-          <label className="text-sm font-medium text-slate-800">
-            Base points
-            <input name="base_points" type="number" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" required />
-          </label>
-        </div>
-        <label className="text-sm font-medium text-slate-800">
-          Title
-          <input name="title" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" required />
-        </label>
-        <label className="text-sm font-medium text-slate-800">
-          Description
-          <textarea name="description" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" rows={3} required />
-        </label>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <label className="text-sm font-medium text-slate-800">
-            Start date &amp; time
-            <input
-              name="start_at"
-              type="datetime-local"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
-              required
-            />
-          </label>
-          <label className="text-sm font-medium text-slate-800">
-            End date
-            <input name="end_date" type="date" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" required />
-          </label>
-        </div>
-        <label className="text-sm font-medium text-slate-800">
-          Bonus rules
-          <input name="bonus_rules" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" />
-        </label>
-        <label className="text-sm font-medium text-slate-800">
-          Stretch goals
-          <input name="stretch_rules" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" />
-        </label>
-        <button
-          type="submit"
-          className="mt-2 w-fit rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow hover:bg-primary/90"
-        >
-          Save challenge
-        </button>
-      </form>
+      <ChallengeForm action={createChallenge} />
 
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-semibold">Existing challenges</h2>
