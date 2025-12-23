@@ -2,6 +2,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 interface SubmissionListProps {
   submissions: any[];
+  challengeLookup?: Record<string, { title?: string; description?: string }>;
 }
 
 const statusMap: Record<string, string> = {
@@ -13,7 +14,7 @@ const statusMap: Record<string, string> = {
   resubmitted: 'Resubmitted'
 };
 
-export function SubmissionList({ submissions }: SubmissionListProps) {
+export function SubmissionList({ submissions, challengeLookup }: SubmissionListProps) {
   if (submissions.length === 0) {
     return <p className="text-sm text-slate-600">No submissions yet. Mark your completion to get started.</p>;
   }
@@ -24,7 +25,9 @@ export function SubmissionList({ submissions }: SubmissionListProps) {
         <li key={submission.id} className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-semibold text-slate-900">Challenge #{submission.challenge_id}</p>
+              <p className="font-semibold text-slate-900">
+                {challengeLookup?.[submission.challenge_id]?.title ?? `Challenge #${submission.challenge_id}`}
+              </p>
               <p className="text-slate-600">{statusMap[submission.status] ?? submission.status}</p>
             </div>
             <div className="text-xs text-slate-500">
