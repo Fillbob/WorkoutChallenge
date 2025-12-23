@@ -24,6 +24,8 @@ async function upsertChallenge(_: unknown, formData: FormData) {
 
   await ensureAdmin(user?.email, user?.id);
 
+  await ensureAdmin(user.email, user.id);
+
   const payload = {
     id: (formData.get('id') as string) || undefined,
     week_index: Number(formData.get('week_index')),
