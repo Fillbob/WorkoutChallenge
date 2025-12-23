@@ -6,6 +6,7 @@ import { getServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/admin';
 import { ChallengeCard } from '@/components/challenge-card';
 import { SubmissionList } from '@/components/submission-list';
+import { CheckCircle } from '@/components/icons';
 
 async function toggleCompletion(formData: FormData) {
   'use server';
@@ -116,14 +117,23 @@ export default async function DashboardPage() {
   const nowIso = now.toISOString();
   const today = nowIso.split('T')[0];
 
-  const { data: currentChallenge } = await supabase
+  const { data: activeChallenges } = await supabase
     .from('challenges')
     .select('*')
     .lte('start_at', nowIso)
     .gte('end_date', today)
     .order('start_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .returns<
+      Array<{
+        id: string;
+        title: string;
+        description: string;
+        start_at: string;
+        start_date?: string;
+        end_date: string;
+        base_points: number;
+      }>
+    >();
 
   const { data: upcomingChallenge } = await supabase
     .from('challenges')
@@ -139,10 +149,8 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  const currentSubmission = submissions?.find((submission) => submission.challenge_id === currentChallenge?.id);
-  const completionDisabled = currentChallenge
-    ? new Date() > addDays(new Date(currentChallenge.end_date), 7)
-    : true;
+  const activeChallengeList = activeChallenges ?? [];
+  const primaryActiveChallenge = activeChallengeList[0];
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-12">
@@ -162,44 +170,68 @@ export default async function DashboardPage() {
 
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
-          <h2 className="text-lg font-semibold">Current challenge</h2>
-          <ChallengeCard challenge={currentChallenge ?? undefined} emptyMessage="No active challenge right now." />
-          {currentChallenge && (
+          <div>
+            <h2 className="text-lg font-semibold">Active challenges</h2>
             <p className="text-sm text-slate-600">
-              Toggle completion before {format(addDays(new Date(currentChallenge.end_date), 7), 'PPP')}.
+              Check off any active challenges you have completed while their completion window is still open.
             </p>
+          </div>
+
+          {activeChallengeList.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+              No active challenges right now.
+            </div>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {activeChallengeList.map((challenge) => {
+                const submission = submissions?.find((entry) => entry.challenge_id === challenge.id);
+                const completionDisabled = new Date() > addDays(new Date(challenge.end_date), 7);
+
+                return (
+                  <form
+                    key={challenge.id}
+                    action={toggleCompletion}
+                    className="flex flex-wrap items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-sm"
+                  >
+                    <input type="hidden" name="challenge_id" value={challenge.id} />
+                    <label className="flex min-w-[220px] items-center gap-3">
+                      <input
+                        type="checkbox"
+                        name="completed"
+                        defaultChecked={Boolean(submission)}
+                        disabled={completionDisabled}
+                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
+                      />
+                      <div className="flex flex-col">
+                        <span className="text-sm font-semibold text-slate-900">{challenge.title}</span>
+                        <span className="text-xs text-slate-600">
+                          {format(new Date(challenge.start_at ?? challenge.start_date), 'MMM d')} –{' '}
+                          {format(new Date(challenge.end_date), 'MMM d')}
+                        </span>
+                        <span className="text-[11px] text-slate-500">
+                          Mark by {format(addDays(new Date(challenge.end_date), 7), 'MMM d')}.
+                        </span>
+                      </div>
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
+                        <CheckCircle /> {challenge.base_points} pts
+                      </span>
+                      <button
+                        type="submit"
+                        disabled={completionDisabled}
+                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {completionDisabled ? 'Closed' : 'Save'}
+                      </button>
+                    </div>
+                  </form>
+                );
+              })}
+            </div>
           )}
-          {currentChallenge && (
-            <form action={toggleCompletion} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h3 className="text-lg font-semibold">Weekly completion</h3>
-              <p className="text-sm text-slate-600">
-                Mark this challenge as done. You can change it until one week after the challenge ends.
-              </p>
-              <input type="hidden" name="challenge_id" value={currentChallenge.id} />
-              <label className="mt-4 flex items-center gap-3 text-sm font-semibold text-slate-800">
-                <input
-                  type="checkbox"
-                  name="completed"
-                  defaultChecked={Boolean(currentSubmission)}
-                  disabled={completionDisabled}
-                  className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                />
-                I completed this week&apos;s challenge
-              </label>
-              {completionDisabled && (
-                <p className="mt-2 text-xs text-slate-500">
-                  Completion window closed on {format(addDays(new Date(currentChallenge.end_date), 7), 'PPP')}.
-                </p>
-              )}
-              <button
-                type="submit"
-                disabled={completionDisabled}
-                className="mt-4 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white shadow disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                Save completion
-              </button>
-            </form>
-          )}
+
+          {primaryActiveChallenge && <ChallengeCard challenge={primaryActiveChallenge} emptyMessage="" />}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Weekly submissions</h2>
