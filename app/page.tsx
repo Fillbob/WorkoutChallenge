@@ -16,8 +16,7 @@ export default async function HomePage() {
         <div className="space-y-4">
           <h1 className="text-3xl font-bold lg:text-4xl">2026 Workout Challenge</h1>
           <p className="text-lg text-white/90">
-            13 weeks. Proof-based accountability. AI-assisted verification. Stay consistent from Jan 1
-            to Mar 31, 2026.
+            13 weeks. Proof-based accountability. Human-reviewed verification. Stay consistent from Jan 1 to Mar 31, 2026.
           </p>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="rounded-full bg-white/10 px-3 py-1">Public dashboard</span>
