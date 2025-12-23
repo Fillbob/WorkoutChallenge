@@ -6,9 +6,9 @@ import { getServerClient } from '@/lib/supabase/server';
 import { getServiceRoleClient } from '@/lib/supabase/admin';
 import { ChallengeCard } from '@/components/challenge-card';
 import { SubmissionList } from '@/components/submission-list';
-import { CheckCircle } from '@/components/icons';
+import { ChallengeCompletionForm, type CompletionFormState } from '@/components/challenge-completion-form';
 
-async function toggleCompletion(formData: FormData) {
+async function toggleCompletion(_: CompletionFormState, formData: FormData): Promise<CompletionFormState> {
   'use server';
 
   const challengeId = formData.get('challenge_id') as string;
@@ -20,62 +20,90 @@ async function toggleCompletion(formData: FormData) {
   } = await supabase.auth.getUser();
 
   if (!user || !challengeId) {
-    return;
+    return { status: 'error', message: 'You must be signed in to update a completion.' };
   }
 
-  const service = getServiceRoleClient();
-  const { data: challenge } = await service
-    .from('challenges')
-    .select('*')
-    .eq('id', challengeId)
-    .maybeSingle();
+  try {
+    const service = getServiceRoleClient();
+    const { data: challenge, error: challengeError } = await service
+      .from('challenges')
+      .select('*')
+      .eq('id', challengeId)
+      .maybeSingle();
 
-  if (!challenge) {
-    return;
-  }
+    if (challengeError || !challenge) {
+      return { status: 'error', message: 'Challenge not found or unavailable.' };
+    }
 
-  const cutoff = addDays(new Date(challenge.end_date), 7);
-  if (new Date() > cutoff) {
-    return;
-  }
+    const cutoff = addDays(new Date(challenge.end_date), 7);
+    if (new Date() > cutoff) {
+      return { status: 'error', message: 'This challenge completion window has closed.' };
+    }
 
-  const { data: existing } = await service
-    .from('submissions')
-    .select('*')
-    .eq('challenge_id', challengeId)
-    .eq('user_id', user.id)
-    .maybeSingle();
+    const { data: existing, error: existingError } = await service
+      .from('submissions')
+      .select('*')
+      .eq('challenge_id', challengeId)
+      .eq('user_id', user.id)
+      .maybeSingle();
 
-  if (completed) {
-    if (!existing) {
-      const { data: inserted } = await service
-        .from('submissions')
-        .insert({
-          challenge_id: challengeId,
-          user_id: user.id,
-          status: 'auto_approved',
-          points_awarded: challenge.base_points,
-          reviewed_at: new Date().toISOString()
-        })
-        .select('*')
-        .maybeSingle();
+    if (existingError) {
+      return { status: 'error', message: 'Could not fetch your existing completion.' };
+    }
 
-      if (inserted) {
-        await service.from('points_ledger').insert({
+    if (completed) {
+      if (!existing) {
+        const { data: inserted, error: insertError } = await service
+          .from('submissions')
+          .insert({
+            challenge_id: challengeId,
+            user_id: user.id,
+            status: 'auto_approved',
+            points_awarded: challenge.base_points,
+            reviewed_at: new Date().toISOString()
+          })
+          .select('*')
+          .maybeSingle();
+
+        if (insertError || !inserted) {
+          return { status: 'error', message: 'Could not save your completion.' };
+        }
+
+        const { error: ledgerError } = await service.from('points_ledger').insert({
           submission_id: inserted.id,
           user_id: user.id,
           challenge_id: challengeId,
           points: challenge.base_points,
           reason: 'self_report'
         });
+
+        if (ledgerError) {
+          return { status: 'error', message: 'Completion saved, but points were not recorded.' };
+        }
+      }
+    } else if (existing && existing.status === 'auto_approved') {
+      const { error: deleteLedgerError } = await service
+        .from('points_ledger')
+        .delete()
+        .eq('submission_id', existing.id)
+        .eq('reason', 'self_report');
+
+      if (deleteLedgerError) {
+        return { status: 'error', message: 'Could not remove points for this completion.' };
+      }
+
+      const { error: deleteSubmissionError } = await service.from('submissions').delete().eq('id', existing.id);
+      if (deleteSubmissionError) {
+        return { status: 'error', message: 'Could not remove completion.' };
       }
     }
-  } else if (existing && existing.status === 'auto_approved') {
-    await service.from('points_ledger').delete().eq('submission_id', existing.id).eq('reason', 'self_report');
-    await service.from('submissions').delete().eq('id', existing.id);
-  }
 
-  revalidatePath('/dashboard');
+    revalidatePath('/dashboard');
+    return { status: 'success', message: 'Saved!' };
+  } catch (error) {
+    console.error('Failed to toggle completion', { error });
+    return { status: 'error', message: 'Unexpected error saving completion. Please try again.' };
+  }
 }
 
 export default async function DashboardPage() {
@@ -188,44 +216,13 @@ export default async function DashboardPage() {
                 const completionDisabled = new Date() > addDays(new Date(challenge.end_date), 7);
 
                 return (
-                  <form
+                  <ChallengeCompletionForm
                     key={challenge.id}
-                    action={toggleCompletion}
-                    className="flex flex-wrap items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-sm"
-                  >
-                    <input type="hidden" name="challenge_id" value={challenge.id} />
-                    <label className="flex min-w-[220px] items-center gap-3">
-                      <input
-                        type="checkbox"
-                        name="completed"
-                        defaultChecked={Boolean(submission)}
-                        disabled={completionDisabled}
-                        className="h-4 w-4 rounded border-slate-300 text-primary focus:ring-primary"
-                      />
-                      <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-slate-900">{challenge.title}</span>
-                        <span className="text-xs text-slate-600">
-                          {format(new Date(challenge.start_at ?? challenge.start_date), 'MMM d')} –{' '}
-                          {format(new Date(challenge.end_date), 'MMM d')}
-                        </span>
-                        <span className="text-[11px] text-slate-500">
-                          Mark by {format(addDays(new Date(challenge.end_date), 7), 'MMM d')}.
-                        </span>
-                      </div>
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-                        <CheckCircle /> {challenge.base_points} pts
-                      </span>
-                      <button
-                        type="submit"
-                        disabled={completionDisabled}
-                        className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 shadow-sm transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {completionDisabled ? 'Closed' : 'Save'}
-                      </button>
-                    </div>
-                  </form>
+                    challenge={challenge}
+                    defaultCompleted={Boolean(submission)}
+                    disabled={completionDisabled}
+                    onSubmitAction={toggleCompletion}
+                  />
                 );
               })}
             </div>
