@@ -7,7 +7,7 @@ interface ChallengeCardProps {
     title: string;
     description: string;
     start_at?: string;
-    start_date: string;
+    start_date?: string;
     end_date: string;
     base_points: number;
     bonus_rules?: string | null;
@@ -26,7 +26,8 @@ export function ChallengeCard({ challenge, variant = 'current', emptyMessage }: 
     );
   }
 
-  const startDate = new Date(challenge.start_at ?? challenge.start_date);
+  const startDateString = challenge.start_at ?? challenge.start_date ?? challenge.end_date;
+  const startDate = new Date(startDateString);
   const label = variant === 'upcoming' ? 'Upcoming' : 'Current week';
 
   return (
