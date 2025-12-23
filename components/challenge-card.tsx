@@ -5,6 +5,7 @@ interface ChallengeCardProps {
   challenge?: {
     title: string;
     description: string;
+    start_at?: string;
     start_date: string;
     end_date: string;
     base_points: number;
@@ -38,7 +39,8 @@ export function ChallengeCard({ challenge }: ChallengeCardProps) {
         <div>
           <p className="font-semibold text-slate-800">Timing</p>
           <p>
-            {format(new Date(challenge.start_date), 'MMM d')} – {format(new Date(challenge.end_date), 'MMM d')}
+            {format(new Date(challenge.start_at ?? challenge.start_date), 'MMM d p')} –{' '}
+            {format(new Date(challenge.end_date), 'MMM d')}
           </p>
         </div>
         <div>

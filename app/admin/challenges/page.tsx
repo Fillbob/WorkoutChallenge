@@ -21,7 +21,8 @@ async function createChallenge(formData: FormData) {
     week_index: Number(formData.get('week_index')),
     title: String(formData.get('title')),
     description: String(formData.get('description')),
-    start_date: String(formData.get('start_date')),
+    start_at: new Date(String(formData.get('start_at'))).toISOString(),
+    start_date: new Date(String(formData.get('start_at'))).toISOString().split('T')[0],
     end_date: String(formData.get('end_date')),
     base_points: Number(formData.get('base_points')),
     bonus_rules: formData.get('bonus_rules') as string,
@@ -76,8 +77,13 @@ export default async function ChallengesAdminPage() {
         </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <label className="text-sm font-medium text-slate-800">
-            Start date
-            <input name="start_date" type="date" className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2" required />
+            Start date &amp; time
+            <input
+              name="start_at"
+              type="datetime-local"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2"
+              required
+            />
           </label>
           <label className="text-sm font-medium text-slate-800">
             End date
@@ -112,7 +118,7 @@ export default async function ChallengesAdminPage() {
                   <p className="text-slate-700">{challenge.description}</p>
                 </div>
                 <div className="text-right text-xs text-slate-600">
-                  <p>Start: {challenge.start_date}</p>
+                  <p>Start: {new Date(challenge.start_at ?? challenge.start_date).toLocaleString()}</p>
                   <p>End: {challenge.end_date}</p>
                   <p className="font-semibold text-primary">{challenge.base_points} pts</p>
                 </div>

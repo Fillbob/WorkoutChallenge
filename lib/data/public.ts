@@ -8,6 +8,7 @@ export interface PublicOverview {
   currentChallenge?: {
     title: string;
     description: string;
+    start_at: string;
     start_date: string;
     end_date: string;
     week_index: number;
@@ -34,7 +35,7 @@ export async function getPublicOverview(): Promise<PublicOverview> {
   const { data: currentChallenge } = await supabase
     .from('challenges')
     .select('*')
-    .lte('start_date', new Date().toISOString())
+    .lte('start_at', new Date().toISOString())
     .gte('end_date', new Date().toISOString())
     .maybeSingle();
 
