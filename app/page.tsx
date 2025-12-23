@@ -9,6 +9,8 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const overview = await getPublicOverview();
+  const primaryChallenge = overview.currentChallenge ?? overview.upcomingChallenge ?? null;
+  const primaryVariant = overview.currentChallenge ? 'current' : 'upcoming';
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-12">
@@ -58,12 +60,16 @@ export default async function HomePage() {
       <section className="mt-10 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-semibold">Current week</h2>
+            <h2 className="text-xl font-semibold">{overview.currentChallenge ? 'Current week' : 'Upcoming challenge'}</h2>
             <Link href="/dashboard" className="text-primary">
               View dashboard
             </Link>
           </div>
-          <ChallengeCard challenge={overview.currentChallenge ?? undefined} />
+          <ChallengeCard
+            challenge={primaryChallenge ?? undefined}
+            variant={primaryVariant === 'upcoming' ? 'upcoming' : 'current'}
+            emptyMessage="No challenges scheduled yet."
+          />
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <Leaderboard data={overview.leaderboard.slice(0, 10)} />
