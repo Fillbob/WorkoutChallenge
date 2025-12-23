@@ -24,9 +24,7 @@ export async function getPublicOverview(): Promise<PublicOverview> {
     .from('profiles')
     .select('id', { count: 'exact', head: true });
 
-  const { data: leaderboard } = await supabase
-    .rpc('public_leaderboard')
-    .catch(() => ({ data: [] as any[] }));
+  const { data: leaderboard, error: leaderboardError } = await supabase.rpc('public_leaderboard');
 
   const { data: weekly } = await supabase
     .from('submissions')
@@ -57,7 +55,7 @@ export async function getPublicOverview(): Promise<PublicOverview> {
       week: Number(week),
       completions
     })),
-    leaderboard: leaderboard ?? [],
+    leaderboard: leaderboardError ? [] : leaderboard ?? [],
     pointsDistribution: Object.entries(pointsDistribution).map(([points, count]) => ({
       points: Number(points),
       count
