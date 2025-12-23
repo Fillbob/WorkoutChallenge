@@ -6,7 +6,8 @@ import { ChallengeForm, ChallengeFormValues } from './challenge-form';
 type Challenge = ChallengeFormValues & {
   id: string;
   start_date: string;
-  created_at?: string;
+  completion_path?: string | null;
+  created_at?: string | null;
 };
 
 export function ChallengesManager({

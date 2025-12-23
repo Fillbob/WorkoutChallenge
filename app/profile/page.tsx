@@ -30,7 +30,7 @@ async function createTeam(formData: FormData) {
     .insert({ name, join_code: joinCode, created_by: user.id })
     .select('*')
     .maybeSingle();
-  if (error) throw error;
+  if (error || !team) throw error ?? new Error('Could not create team');
   await supabase.from('team_members').insert({ team_id: team.id, user_id: user.id, role: 'owner' });
   revalidatePath('/profile');
 }
