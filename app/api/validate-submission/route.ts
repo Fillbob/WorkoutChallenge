@@ -69,7 +69,23 @@ export async function POST(req: Request) {
       model: 'gpt-4o-mini-1.1',
       instructions:
         'You are a strict fitness challenge validator. Output ONLY valid JSON that matches the provided schema. If unsure, respond with verdict "needs_review". Never hallucinate details. Reject blurry or unrelated images.',
-      input: [{ role: 'user', content }],
+      input: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: `Challenge description: ${submission.challenges?.description}\nBonus rules: ${
+                submission.challenges?.bonus_rules ?? 'none'
+              }\nStretch rules: ${submission.challenges?.stretch_rules ?? 'none'}`
+            },
+            ...signedUrls.map((signed) => ({
+              type: 'input_image',
+              image_url: { url: signed.signedUrl }
+            }))
+          ]
+        }
+      ],
       response_format: { type: 'json_schema', json_schema: verdictSchema }
     });
 
