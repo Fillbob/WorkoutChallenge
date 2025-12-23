@@ -45,7 +45,6 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
       .select('*')
       .eq('challenge_id', challengeId)
       .eq('user_id', user.id)
-      .eq('status', 'auto_approved')
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -55,6 +54,8 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
     }
 
     if (completed) {
+      let submissionId = existing?.id;
+
       if (!existing) {
         const { data: inserted, error: insertError } = await service
           .from('submissions')
@@ -72,23 +73,50 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
           return { status: 'error', message: 'Could not save your completion.' };
         }
 
-        const { error: ledgerError } = await service.from('points_ledger').insert({
-          submission_id: inserted.id,
-          user_id: user.id,
-          challenge_id: challengeId,
-          points: challenge.base_points,
-          reason: 'self_report'
-        });
+        submissionId = inserted.id;
+      } else {
+        const { error: updateError } = await service
+          .from('submissions')
+          .update({
+            status: 'auto_approved',
+            points_awarded: challenge.base_points,
+            reviewed_at: new Date().toISOString()
+          })
+          .eq('id', existing.id);
 
-        if (ledgerError) {
-          return { status: 'error', message: 'Completion saved, but points were not recorded.' };
+        if (updateError) {
+          return { status: 'error', message: 'Could not update your completion status.' };
         }
       }
-    } else if (existing && existing.status === 'auto_approved') {
+
+      const { error: clearLedgerError } = await service
+        .from('points_ledger')
+        .delete()
+        .eq('challenge_id', challengeId)
+        .eq('user_id', user.id)
+        .eq('reason', 'self_report');
+
+      if (clearLedgerError) {
+        return { status: 'error', message: 'Completion saved, but points could not be refreshed.' };
+      }
+
+      const { error: ledgerError } = await service.from('points_ledger').insert({
+        submission_id: submissionId!,
+        user_id: user.id,
+        challenge_id: challengeId,
+        points: challenge.base_points,
+        reason: 'self_report'
+      });
+
+      if (ledgerError) {
+        return { status: 'error', message: 'Completion saved, but points were not recorded.' };
+      }
+    } else if (existing) {
       const { error: deleteLedgerError } = await service
         .from('points_ledger')
         .delete()
-        .eq('submission_id', existing.id)
+        .eq('challenge_id', challengeId)
+        .eq('user_id', user.id)
         .eq('reason', 'self_report');
 
       if (deleteLedgerError) {
@@ -101,6 +129,7 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
       }
     }
 
+    revalidatePath('/');
     revalidatePath('/dashboard');
     return { status: 'success', message: 'Saved!' };
   } catch (error) {
@@ -166,13 +195,12 @@ export default async function DashboardPage() {
       }>
     >();
 
-  const { data: upcomingChallenge } = await supabase
+  const { data: upcomingChallenges } = await supabase
     .from('challenges')
     .select('*')
     .gt('start_at', nowIso)
     .order('start_at', { ascending: true })
-    .limit(1)
-    .maybeSingle();
+    .limit(5);
 
   const { data: submissions } = await supabase
     .from('submissions')
@@ -180,8 +208,22 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
+  const { data: pastChallenges } = await supabase
+    .from('challenges')
+    .select('*')
+    .lt('end_date', today)
+    .order('start_at', { ascending: false })
+    .limit(8);
+
   const activeChallengeList = activeChallenges ?? [];
   const primaryActiveChallenge = activeChallengeList[0];
+
+  const challengeLookup = Object.fromEntries(
+    [...activeChallengeList, ...(pastChallenges ?? []), ...(upcomingChallenges ?? [])].map((challenge) => [
+      challenge.id,
+      challenge
+    ])
+  );
 
   return (
     <div className="mx-auto max-w-5xl space-y-8 px-4 py-12">
@@ -235,17 +277,72 @@ export default async function DashboardPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Weekly submissions</h2>
-          <SubmissionList submissions={submissions ?? []} />
+          <SubmissionList submissions={submissions ?? []} challengeLookup={challengeLookup} />
         </div>
       </section>
 
-      <section className="grid gap-4">
-        <h2 className="text-lg font-semibold">Upcoming challenge</h2>
-        <ChallengeCard
-          challenge={upcomingChallenge ?? undefined}
-          variant="upcoming"
-          emptyMessage="No upcoming challenge scheduled yet."
-        />
+      <section className="grid gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2 space-y-4">
+          <h2 className="text-lg font-semibold">Your progress</h2>
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-emerald-700">Accomplished</h3>
+              <SubmissionList
+                submissions={(submissions ?? []).filter((submission) =>
+                  ['approved', 'auto_approved'].includes(submission.status)
+                )}
+                challengeLookup={challengeLookup}
+              />
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <h3 className="text-sm font-semibold text-rose-700">Failed / missed</h3>
+              <SubmissionList
+                submissions={(pastChallenges ?? [])
+                  .map((challenge) => {
+                    const submission = (submissions ?? []).find(
+                      (entry) => entry.challenge_id === challenge.id
+                    );
+                    const beyondGrace = new Date() > addDays(new Date(challenge.end_date), 7);
+
+                    if (submission && ['approved', 'auto_approved'].includes(submission.status)) {
+                      return null;
+                    }
+
+                    if (!beyondGrace) return null;
+
+                    return (
+                      submission ?? {
+                        id: `${challenge.id}-missed`,
+                        challenge_id: challenge.id,
+                        status: 'rejected',
+                        created_at: challenge.end_date,
+                        points_awarded: 0
+                      }
+                    );
+                  })
+                  .filter(Boolean)}
+                challengeLookup={challengeLookup}
+              />
+            </div>
+          </div>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="text-lg font-semibold">Upcoming challenges</h2>
+          {upcomingChallenges && upcomingChallenges.length > 0 ? (
+            <ul className="mt-3 space-y-3 text-sm text-slate-700">
+              {upcomingChallenges.map((challenge) => (
+                <li key={challenge.id} className="rounded-lg bg-slate-50 px-3 py-2">
+                  <div className="font-semibold text-slate-900">{challenge.title}</div>
+                  <div className="text-xs text-slate-600">
+                    Starts {format(new Date(challenge.start_at ?? challenge.start_date), 'MMM d')} · {challenge.base_points} pts
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-sm text-slate-600">No upcoming challenges scheduled.</p>
+          )}
+        </div>
       </section>
     </div>
   );
