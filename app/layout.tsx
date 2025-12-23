@@ -4,6 +4,8 @@ import './globals.css';
 import Link from 'next/link';
 import { Suspense } from 'react';
 import { AuthProvider } from '@/components/auth-provider';
+import { getServerClient } from '@/lib/supabase/server';
+import { isAdminUser } from '@/lib/admin';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -12,11 +14,25 @@ export const metadata: Metadata = {
   description: 'Join the 3-month workout challenge (Jan 1–Mar 31, 2026).'
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = getServerClient();
+  const {
+    data: { user }
+  } = await supabase.auth.getUser();
+
+  let accessLevel: 'admin' | 'user' | 'guest' = 'guest';
+
+  if (user) {
+    const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    const profileRole = profile?.role;
+    const hasAdminAccess = profileRole === 'admin' || isAdminUser(user.email);
+    accessLevel = hasAdminAccess ? 'admin' : 'user';
+  }
+
   return (
     <html lang="en">
       <body className={`${inter.className} min-h-screen bg-slate-50 text-slate-900`}>
@@ -27,11 +43,16 @@ export default function RootLayout({
                 <Link href="/" className="text-lg font-semibold text-primary">
                   Workout Challenge 2026
                 </Link>
-                <nav className="flex items-center gap-4 text-sm font-medium text-slate-700">
-                  <Link href="/dashboard">Dashboard</Link>
-                  <Link href="/profile">Profile</Link>
-                  <Link href="/admin">Admin</Link>
-                </nav>
+                <div className="flex items-center gap-4">
+                  <nav className="flex items-center gap-4 text-sm font-medium text-slate-700">
+                    <Link href="/dashboard">Dashboard</Link>
+                    <Link href="/profile">Profile</Link>
+                    {accessLevel === 'admin' && <Link href="/admin">Admin</Link>}
+                  </nav>
+                  <div className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700">
+                    Access: {accessLevel === 'guest' ? 'Guest' : accessLevel === 'admin' ? 'Admin' : 'Participant'}
+                  </div>
+                </div>
               </div>
             </header>
             <main className="flex-1">
