@@ -22,9 +22,7 @@ async function upsertChallenge(_: unknown, formData: FormData) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/admin');
-  }
+  await ensureAdmin(user?.email, user?.id);
 
   await ensureAdmin(user.email, user.id);
 
@@ -76,11 +74,7 @@ async function deleteChallenge(formData: FormData) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    redirect('/admin');
-  }
-
-  await ensureAdmin(user.email, user.id);
+  await ensureAdmin(user?.email, user?.id);
 
   const challengeId = formData.get('id') as string | null;
   if (!challengeId) return;
