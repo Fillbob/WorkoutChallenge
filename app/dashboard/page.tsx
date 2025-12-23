@@ -45,6 +45,9 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
       .select('*')
       .eq('challenge_id', challengeId)
       .eq('user_id', user.id)
+      .eq('status', 'auto_approved')
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
 
     if (existingError) {
