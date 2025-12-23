@@ -1,5 +1,4 @@
 import { getServerClient } from './supabase/server';
-import { getServiceRoleClient } from './supabase/admin';
 
 export async function getSession() {
   const supabase = getServerClient();
@@ -26,12 +25,12 @@ export async function getProfile() {
 }
 
 export async function requireAdmin() {
-  const service = getServiceRoleClient();
+  const supabase = getServerClient();
   const {
     data: { user }
-  } = await service.auth.getUser();
+  } = await supabase.auth.getUser();
   if (!user) return false;
-  const { data: profile } = await service
+  const { data: profile } = await supabase
     .from('profiles')
     .select('role')
     .eq('id', user.id)
