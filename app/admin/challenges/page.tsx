@@ -22,7 +22,9 @@ async function upsertChallenge(_: unknown, formData: FormData) {
     data: { user }
   } = await supabase.auth.getUser();
 
-  await ensureAdmin(user?.email, user?.id);
+  if (!user || !user.email || !user.id) {
+    redirect('/admin');
+  }
 
   await ensureAdmin(user.email, user.id);
 
