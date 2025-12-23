@@ -17,7 +17,7 @@ export default async function AdminReviewPage() {
   const service = getServiceRoleClient();
   const { data: submissions } = await service
     .from('submissions')
-    .select('*, profiles(display_name), challenges(title, week_index)')
+    .select('*, profiles!submissions_user_id_fkey(display_name), challenges(title, week_index)')
     .order('created_at', { ascending: false });
 
   return (
@@ -45,7 +45,7 @@ export default async function AdminReviewPage() {
                 <p className="text-xs uppercase text-slate-500">{submission.status}</p>
               </div>
               <div className="text-xs text-slate-500">
-                {formatDistanceToNow(new Date(submission.created_at), { addSuffix: true })}
+                {formatDistanceToNow(new Date(submission.created_at ?? new Date().toISOString()), { addSuffix: true })}
               </div>
             </li>
           ))}

@@ -13,6 +13,8 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
 
   const challengeId = formData.get('challenge_id') as string;
   const completed = formData.get('completed') === 'on';
+  const completionPath = (formData.get('completion_path') as string | null) ?? null;
+  const followupPath = completionPath && completionPath.length > 0 ? completionPath : null;
 
   const supabase = getServerClient();
   const {
@@ -130,7 +132,14 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
     }
 
     revalidatePath('/');
-    revalidatePath('/dashboard');
+    if (followupPath) {
+      revalidatePath(followupPath);
+      if (followupPath !== '/dashboard') {
+        revalidatePath('/dashboard');
+      }
+    } else {
+      revalidatePath('/dashboard');
+    }
     return { status: 'success', message: 'Saved!' };
   } catch (error) {
     console.error('Failed to toggle completion', { error });
@@ -192,6 +201,7 @@ export default async function DashboardPage() {
         start_date?: string;
         end_date: string;
         base_points: number;
+        completion_path?: string | null;
       }>
     >();
 

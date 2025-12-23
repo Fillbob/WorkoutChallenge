@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import { addDays, format } from 'date-fns';
 import { useFormState, useFormStatus } from 'react-dom';
 import { CheckCircle } from './icons';
@@ -17,6 +18,7 @@ type Props = {
     start_date?: string;
     end_date: string;
     base_points: number;
+    completion_path?: string | null;
   };
   defaultCompleted: boolean;
   disabled: boolean;
@@ -38,6 +40,13 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
 
 export function ChallengeCompletionForm({ challenge, defaultCompleted, disabled, onSubmitAction }: Props) {
   const [state, formAction] = useFormState(onSubmitAction, { status: 'idle' });
+  const completionPath = challenge.completion_path ?? '/dashboard';
+
+  useEffect(() => {
+    if (state.status === 'success' && completionPath) {
+      window.location.assign(completionPath);
+    }
+  }, [state.status, completionPath]);
 
   return (
     <form
@@ -45,6 +54,7 @@ export function ChallengeCompletionForm({ challenge, defaultCompleted, disabled,
       className="flex flex-wrap items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-sm"
     >
       <input type="hidden" name="challenge_id" value={challenge.id} />
+      <input type="hidden" name="completion_path" value={completionPath} />
       <label className="flex min-w-[220px] items-center gap-3">
         <input
           type="checkbox"
