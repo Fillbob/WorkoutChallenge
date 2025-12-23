@@ -6,10 +6,7 @@ export default function HowItWorksPage() {
         <li>Sign in with Google. Your email stays private; only your display name is public.</li>
         <li>Pick a nickname and join or create a team (optional).</li>
         <li>Open the current week challenge and upload 1–5 images as proof.</li>
-        <li>
-          Our AI checks for completion using the challenge rubric. Confident passes auto-approve; uncertain cases go to an
-          admin review queue.
-        </li>
+        <li>Admins review submissions against the weekly rubric to keep things fair.</li>
         <li>Earn points each week. Leaderboard uses display names only.</li>
         <li>Admins can approve, reject, or request resubmission with full audit logging.</li>
       </ol>

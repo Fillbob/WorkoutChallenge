@@ -17,7 +17,7 @@ export function UploadForm({ challengeId }: { challengeId: string | number }) {
 
     const { data: submissionRow, error } = await supabase
       .from('submissions')
-      .insert({ challenge_id: challengeId, status: 'pending_ai', user_id: session.user.id })
+      .insert({ challenge_id: challengeId, status: 'needs_review', user_id: session.user.id })
       .select('*')
       .maybeSingle();
 
@@ -40,7 +40,7 @@ export function UploadForm({ challengeId }: { challengeId: string | number }) {
       await supabase.from('submission_images').insert({ submission_id: submissionRow.id, storage_path: path });
     }
 
-    setMessage('Submitted. We will run AI validation shortly.');
+    setMessage('Submitted. An admin will review your proof soon.');
     setLoading(false);
   };
 

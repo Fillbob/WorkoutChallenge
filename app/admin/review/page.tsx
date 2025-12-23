@@ -132,7 +132,6 @@ export default async function ReviewPage() {
               <div>
                 <p className="text-xs uppercase text-slate-500">{submission.challenges?.title}</p>
                 <p className="text-lg font-semibold text-slate-900">{submission.profiles?.display_name}</p>
-                <p className="text-sm text-slate-600">AI: {submission.ai_verdict ?? 'pending'} (conf {submission.ai_confidence ?? 0})</p>
               </div>
               <div className="text-right text-sm text-slate-600">
                 <p>Points suggested: {submission.challenges?.base_points}</p>

@@ -41,7 +41,7 @@ export default function RootLayout({
             </main>
             <footer className="border-t border-slate-200 bg-white/80">
               <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-slate-600">
-                Built for the Jan–Mar 2026 workout challenge. Privacy-first, AI-assisted verification.
+                Built for the Jan–Mar 2026 workout challenge. Privacy-first, human-reviewed verification.
               </div>
             </footer>
           </div>

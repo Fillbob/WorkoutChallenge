@@ -5,7 +5,7 @@ interface SubmissionListProps {
 }
 
 const statusMap: Record<string, string> = {
-  pending_ai: 'Pending AI review',
+  pending_ai: 'Submitted (awaiting review)',
   auto_approved: 'Auto-approved',
   needs_review: 'Needs admin review',
   approved: 'Approved',
