@@ -44,7 +44,9 @@ export async function getPublicOverview(): Promise<PublicOverview> {
     return acc;
   }, {});
 
-  const pointsDistribution = (leaderboard ?? []).reduce<Record<number, number>>((acc, row) => {
+  const leaderboardRows = (leaderboardError ? [] : leaderboard ?? []) as PublicOverview['leaderboard'];
+
+  const pointsDistribution = leaderboardRows.reduce<Record<number, number>>((acc, row) => {
     acc[row.points] = (acc[row.points] || 0) + 1;
     return acc;
   }, {});
@@ -55,7 +57,7 @@ export async function getPublicOverview(): Promise<PublicOverview> {
       week: Number(week),
       completions
     })),
-    leaderboard: leaderboardError ? [] : leaderboard ?? [],
+    leaderboard: leaderboardRows,
     pointsDistribution: Object.entries(pointsDistribution).map(([points, count]) => ({
       points: Number(points),
       count
