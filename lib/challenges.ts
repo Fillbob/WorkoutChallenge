@@ -5,6 +5,7 @@ export interface ChallengeInput {
   week_index: number;
   title: string;
   description: string;
+  start_at: string;
   start_date: string;
   end_date: string;
   base_points: number;
