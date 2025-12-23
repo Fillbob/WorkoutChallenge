@@ -6,7 +6,7 @@ interface SubmissionListProps {
 
 const statusMap: Record<string, string> = {
   pending_ai: 'Submitted (awaiting review)',
-  auto_approved: 'Auto-approved',
+  auto_approved: 'Completed',
   needs_review: 'Needs admin review',
   approved: 'Approved',
   rejected: 'Rejected',
@@ -15,7 +15,7 @@ const statusMap: Record<string, string> = {
 
 export function SubmissionList({ submissions }: SubmissionListProps) {
   if (submissions.length === 0) {
-    return <p className="text-sm text-slate-600">No submissions yet. Upload proof to get started.</p>;
+    return <p className="text-sm text-slate-600">No submissions yet. Mark your completion to get started.</p>;
   }
 
   return (
