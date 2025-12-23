@@ -112,11 +112,25 @@ export default async function DashboardPage() {
     profile = created ?? null;
   }
 
+  const now = new Date();
+  const nowIso = now.toISOString();
+  const today = nowIso.split('T')[0];
+
   const { data: currentChallenge } = await supabase
     .from('challenges')
     .select('*')
-    .lte('start_at', new Date().toISOString())
-    .gte('end_date', new Date().toISOString())
+    .lte('start_at', nowIso)
+    .gte('end_date', today)
+    .order('start_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const { data: upcomingChallenge } = await supabase
+    .from('challenges')
+    .select('*')
+    .gt('start_at', nowIso)
+    .order('start_at', { ascending: true })
+    .limit(1)
     .maybeSingle();
 
   const { data: submissions } = await supabase
@@ -149,7 +163,7 @@ export default async function DashboardPage() {
       <section className="grid gap-6 lg:grid-cols-2">
         <div className="space-y-4">
           <h2 className="text-lg font-semibold">Current challenge</h2>
-          <ChallengeCard challenge={currentChallenge ?? undefined} />
+          <ChallengeCard challenge={currentChallenge ?? undefined} emptyMessage="No active challenge right now." />
           {currentChallenge && (
             <p className="text-sm text-slate-600">
               Toggle completion before {format(addDays(new Date(currentChallenge.end_date), 7), 'PPP')}.
@@ -191,6 +205,15 @@ export default async function DashboardPage() {
           <h2 className="text-lg font-semibold">Weekly submissions</h2>
           <SubmissionList submissions={submissions ?? []} />
         </div>
+      </section>
+
+      <section className="grid gap-4">
+        <h2 className="text-lg font-semibold">Upcoming challenge</h2>
+        <ChallengeCard
+          challenge={upcomingChallenge ?? undefined}
+          variant="upcoming"
+          emptyMessage="No upcoming challenge scheduled yet."
+        />
       </section>
     </div>
   );
