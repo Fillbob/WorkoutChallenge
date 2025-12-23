@@ -1,6 +1,6 @@
 # Workout Challenge 2026
 
-A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. It uses Supabase (Postgres, Auth, Storage) for data and Vercel for deployment. Proof photos stay private with RLS and signed URLs, while the public site exposes only aggregate stats and display names.
+A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. It uses Supabase (Postgres, Auth, Storage) for data and Vercel for deployment. Participants self-report completions while the public site exposes only aggregate stats and display names.
 
 ## Stack
 - Next.js (App Router) + TypeScript
@@ -13,8 +13,8 @@ A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. I
 - Google sign-in with Supabase Auth
 - Profile management (nickname, team join/create)
 - Weekly challenges (admin CRUD)
-- Proof uploads (1–5 images) stored privately
-- Admin review queue and audit log foundation for manual verification
+- Self-reported completions (no media uploads)
+- Admin oversight for totals and audit log foundation
 
 ## Getting started
 1. **Install dependencies**
@@ -32,7 +32,7 @@ A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. I
      ```bash
      supabase db push --file supabase/migrations/0001_init.sql
      ```
-   - Confirm the private storage bucket exists: `submission-proofs` (created by the migration) and is not public.
+   - Confirm the Supabase project is ready for RLS-enabled tables.
 4. **Local development**
    ```bash
    npm run dev
@@ -47,12 +47,11 @@ A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. I
 
 ## Deployment
 - **Vercel**: add all env vars above. Set `SUPABASE_SERVICE_ROLE_KEY` as server-only.
-- **Supabase**: apply migrations and ensure RLS policies are enabled (included in migration). The storage policies restrict access to proof images to the uploader and admins only.
+- **Supabase**: apply migrations and ensure RLS policies are enabled (included in migration).
 
 ## Security & privacy
-- Proof images live in a private bucket with RLS policies; access uses signed URLs.
 - Public endpoints return aggregates only; leaderboard uses display names/nicknames.
 - Admin actions are written to `admin_audit`.
 
 ## Database schema
-See `supabase/migrations/0001_init.sql` for full DDL, RLS, bucket policies, and the `public_leaderboard` helper.
+See `supabase/migrations/0001_init.sql` for full DDL, RLS, and the `public_leaderboard` helper.

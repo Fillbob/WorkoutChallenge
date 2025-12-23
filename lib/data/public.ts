@@ -30,7 +30,7 @@ export async function getPublicOverview(): Promise<PublicOverview> {
   const { data: weekly } = await supabase
     .from('submissions')
     .select('challenge_id, challenges(week_index)')
-    .eq('status', 'approved');
+    .in('status', ['approved', 'auto_approved']);
 
   const { data: currentChallenge } = await supabase
     .from('challenges')
