@@ -53,17 +53,9 @@ export async function POST(req: Request) {
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const response = await openai.responses.create({
       model: 'gpt-4o-mini-1.1',
+      instructions:
+        'You are a strict fitness challenge validator. Output ONLY valid JSON that matches the provided schema. If unsure, respond with verdict "needs_review". Never hallucinate details. Reject blurry or unrelated images.',
       input: [
-        {
-          role: 'system',
-          content: [
-            {
-              type: 'text',
-              text:
-                'You are a strict fitness challenge validator. Output ONLY valid JSON that matches the provided schema. If unsure, respond with verdict "needs_review". Never hallucinate details. Reject blurry or unrelated images.'
-            }
-          ]
-        },
         {
           role: 'user',
           content: [
