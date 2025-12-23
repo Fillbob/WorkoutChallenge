@@ -1,6 +1,6 @@
 # Workout Challenge
 
-A production-ready Next.js app for recurring workout challenges. It uses Supabase (Postgres, Auth, Storage) for data and Vercel for deployment. Participants self-report completions while the public site exposes only aggregate stats and display names.
+A production-ready Next.js app for the Jan 1–Mar 31, 2026 workout challenge. It uses Supabase (Postgres, Auth, Storage) for data and Vercel for deployment. Participants self-report completions while the public site exposes only aggregate stats and display names.
 
 ## Stack
 - Next.js (App Router) + TypeScript
