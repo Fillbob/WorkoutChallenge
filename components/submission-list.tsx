@@ -1,3 +1,4 @@
+import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 
 interface SubmissionListProps {
@@ -34,7 +35,7 @@ export function SubmissionList({ submissions, challengeLookup }: SubmissionListP
               {formatDistanceToNow(new Date(submission.created_at), { addSuffix: true })}
             </div>
           </div>
-          {submission.points_awarded && (
+          {submission.points_awarded != null && (
             <p className="mt-1 text-xs font-semibold text-emerald-700">+{submission.points_awarded} pts</p>
           )}
         </li>
