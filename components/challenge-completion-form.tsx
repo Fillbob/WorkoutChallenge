@@ -54,7 +54,6 @@ export function ChallengeCompletionForm({ challenge, defaultCompleted, disabled,
       className="flex flex-wrap items-center gap-3 rounded-full border border-slate-200 bg-white px-5 py-3 shadow-sm"
     >
       <input type="hidden" name="challenge_id" value={challenge.id} />
-      <input type="hidden" name="completion_path" value={completionPath} />
       <label className="flex min-w-[220px] items-center gap-3">
         <input
           type="checkbox"
