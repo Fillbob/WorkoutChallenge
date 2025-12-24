@@ -283,7 +283,7 @@ export default async function DashboardPage() {
 
           {activeChallengesError ? (
             <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-800 shadow-sm">
-              We couldn't load active challenges right now. Please try again soon.
+              We could not load active challenges right now. Please try again soon.
             </div>
           ) : activeChallengeList.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
@@ -310,27 +310,27 @@ export default async function DashboardPage() {
 
           {primaryActiveChallenge && <ChallengeCard challenge={primaryActiveChallenge} emptyMessage="" />}
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-lg font-semibold">Weekly submissions</h2>
-          {submissionsError ? (
-            <p className="text-sm text-amber-800">We couldn't load your submissions right now. Please try again soon.</p>
-          ) : (
-            <SubmissionList submissions={submissionList} challengeLookup={challengeLookup} />
-          )}
-        </div>
-      </section>
+          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            <h2 className="text-lg font-semibold">Weekly submissions</h2>
+            {submissionsError ? (
+              <p className="text-sm text-amber-800">We could not load your submissions right now. Please try again soon.</p>
+            ) : (
+              <SubmissionList submissions={submissionList} challengeLookup={challengeLookup} />
+            )}
+          </div>
+        </section>
 
-      <section className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-lg font-semibold">Your progress</h2>
-          {submissionsError || pastChallengesError ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
-              We couldn't load your progress details right now. Please try again soon.
-            </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <h3 className="text-sm font-semibold text-emerald-700">Accomplished</h3>
+        <section className="grid gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2 space-y-4">
+            <h2 className="text-lg font-semibold">Your progress</h2>
+            {submissionsError || pastChallengesError ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+                We could not load your progress details right now. Please try again soon.
+              </div>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                  <h3 className="text-sm font-semibold text-emerald-700">Accomplished</h3>
                 <SubmissionList
                   submissions={submissionList.filter((submission) =>
                     ['approved', 'auto_approved'].includes(submission.status)
@@ -372,7 +372,7 @@ export default async function DashboardPage() {
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold">Upcoming challenges</h2>
           {upcomingChallengesError ? (
-            <p className="mt-2 text-sm text-amber-800">We couldn't load upcoming challenges right now. Please try again soon.</p>
+            <p className="mt-2 text-sm text-amber-800">We could not load upcoming challenges right now. Please try again soon.</p>
           ) : upcomingChallengeList.length > 0 ? (
             <ul className="mt-3 space-y-3 text-sm text-slate-700">
               {upcomingChallengeList.map((challenge) => (
