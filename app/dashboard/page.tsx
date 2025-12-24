@@ -186,7 +186,7 @@ export default async function DashboardPage() {
   const nowIso = now.toISOString();
   const today = nowIso.split('T')[0];
 
-  const { data: activeChallenges } = await supabase
+  const { data: activeChallenges, error: activeChallengesError } = await supabase
     .from('challenges')
     .select('*')
     .lte('start_at', nowIso)
@@ -205,31 +205,50 @@ export default async function DashboardPage() {
       }>
     >();
 
-  const { data: upcomingChallenges } = await supabase
+  if (activeChallengesError) {
+    console.error('Failed to load active challenges', { error: activeChallengesError });
+  }
+
+  const { data: upcomingChallenges, error: upcomingChallengesError } = await supabase
     .from('challenges')
     .select('*')
     .gt('start_at', nowIso)
     .order('start_at', { ascending: true })
     .limit(5);
 
-  const { data: submissions } = await supabase
+  if (upcomingChallengesError) {
+    console.error('Failed to load upcoming challenges', { error: upcomingChallengesError });
+  }
+
+  const { data: submissions, error: submissionsError } = await supabase
     .from('submissions')
     .select('*')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false });
 
-  const { data: pastChallenges } = await supabase
+  if (submissionsError) {
+    console.error('Failed to load submissions', { error: submissionsError });
+  }
+
+  const { data: pastChallenges, error: pastChallengesError } = await supabase
     .from('challenges')
     .select('*')
     .lt('end_date', today)
     .order('start_at', { ascending: false })
     .limit(8);
 
-  const activeChallengeList = activeChallenges ?? [];
+  if (pastChallengesError) {
+    console.error('Failed to load past challenges', { error: pastChallengesError });
+  }
+
+  const activeChallengeList = activeChallengesError ? [] : activeChallenges ?? [];
+  const upcomingChallengeList = upcomingChallengesError ? [] : upcomingChallenges ?? [];
+  const submissionList = submissionsError ? [] : submissions ?? [];
+  const pastChallengeList = pastChallengesError ? [] : pastChallenges ?? [];
   const primaryActiveChallenge = activeChallengeList[0];
 
   const challengeLookup = Object.fromEntries(
-    [...activeChallengeList, ...(pastChallenges ?? []), ...(upcomingChallenges ?? [])].map((challenge) => [
+    [...activeChallengeList, ...pastChallengeList, ...upcomingChallengeList].map((challenge) => [
       challenge.id,
       challenge
     ])
@@ -260,14 +279,18 @@ export default async function DashboardPage() {
             </p>
           </div>
 
-          {activeChallengeList.length === 0 ? (
+          {activeChallengesError ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-800 shadow-sm">
+              We couldn't load active challenges right now. Please try again soon.
+            </div>
+          ) : activeChallengeList.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
               No active challenges right now.
             </div>
           ) : (
             <div className="flex flex-wrap gap-3">
               {activeChallengeList.map((challenge) => {
-                const submission = submissions?.find((entry) => entry.challenge_id === challenge.id);
+                const submission = submissionList.find((entry) => entry.challenge_id === challenge.id);
                 const completionDisabled = new Date() > addDays(new Date(challenge.end_date), 7);
 
                 return (
@@ -287,60 +310,70 @@ export default async function DashboardPage() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-lg font-semibold">Weekly submissions</h2>
-          <SubmissionList submissions={submissions ?? []} challengeLookup={challengeLookup} />
+          {submissionsError ? (
+            <p className="text-sm text-amber-800">We couldn't load your submissions right now. Please try again soon.</p>
+          ) : (
+            <SubmissionList submissions={submissionList} challengeLookup={challengeLookup} />
+          )}
         </div>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-4">
           <h2 className="text-lg font-semibold">Your progress</h2>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-emerald-700">Accomplished</h3>
-              <SubmissionList
-                submissions={(submissions ?? []).filter((submission) =>
-                  ['approved', 'auto_approved'].includes(submission.status)
-                )}
-                challengeLookup={challengeLookup}
-              />
+          {submissionsError || pastChallengesError ? (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-800 shadow-sm">
+              We couldn't load your progress details right now. Please try again soon.
             </div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-              <h3 className="text-sm font-semibold text-rose-700">Failed / missed</h3>
-              <SubmissionList
-                submissions={(pastChallenges ?? [])
-                  .map((challenge) => {
-                    const submission = (submissions ?? []).find(
-                      (entry) => entry.challenge_id === challenge.id
-                    );
-                    const beyondGrace = new Date() > addDays(new Date(challenge.end_date), 7);
+          ) : (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-emerald-700">Accomplished</h3>
+                <SubmissionList
+                  submissions={submissionList.filter((submission) =>
+                    ['approved', 'auto_approved'].includes(submission.status)
+                  )}
+                  challengeLookup={challengeLookup}
+                />
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <h3 className="text-sm font-semibold text-rose-700">Failed / missed</h3>
+                <SubmissionList
+                  submissions={pastChallengeList
+                    .map((challenge) => {
+                      const submission = submissionList.find((entry) => entry.challenge_id === challenge.id);
+                      const beyondGrace = new Date() > addDays(new Date(challenge.end_date), 7);
 
-                    if (submission && ['approved', 'auto_approved'].includes(submission.status)) {
-                      return null;
-                    }
-
-                    if (!beyondGrace) return null;
-
-                    return (
-                      submission ?? {
-                        id: `${challenge.id}-missed`,
-                        challenge_id: challenge.id,
-                        status: 'rejected',
-                        created_at: challenge.end_date,
-                        points_awarded: 0
+                      if (submission && ['approved', 'auto_approved'].includes(submission.status)) {
+                        return null;
                       }
-                    );
-                  })
-                  .filter(Boolean)}
-                challengeLookup={challengeLookup}
-              />
+
+                      if (!beyondGrace) return null;
+
+                      return (
+                        submission ?? {
+                          id: `${challenge.id}-missed`,
+                          challenge_id: challenge.id,
+                          status: 'rejected',
+                          created_at: challenge.end_date,
+                          points_awarded: 0
+                        }
+                      );
+                    })
+                    .filter(Boolean)}
+                  challengeLookup={challengeLookup}
+                />
+              </div>
             </div>
-          </div>
+          )}
         </div>
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-lg font-semibold">Upcoming challenges</h2>
-          {upcomingChallenges && upcomingChallenges.length > 0 ? (
+          {upcomingChallengesError ? (
+            <p className="mt-2 text-sm text-amber-800">We couldn't load upcoming challenges right now. Please try again soon.</p>
+          ) : upcomingChallengeList.length > 0 ? (
             <ul className="mt-3 space-y-3 text-sm text-slate-700">
-              {upcomingChallenges.map((challenge) => (
+              {upcomingChallengeList.map((challenge) => (
                 <li key={challenge.id} className="rounded-lg bg-slate-50 px-3 py-2">
                   <div className="font-semibold text-slate-900">{challenge.title}</div>
                   <div className="text-xs text-slate-600">
