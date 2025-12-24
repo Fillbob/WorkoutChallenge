@@ -44,14 +44,15 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
       return { status: 'error', message: 'This challenge completion window has closed.' };
     }
 
-    const { data: existing, error: existingError } = await service
+    const { data: existingRows, error: existingError } = await service
       .from('submissions')
       .select('*')
       .eq('challenge_id', challengeId)
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(1);
+
+    const existing = existingRows?.[0] ?? null;
 
     if (existingError) {
       return { status: 'error', message: 'Could not fetch your existing completion.' };
