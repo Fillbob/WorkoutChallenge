@@ -13,8 +13,6 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
 
   const challengeId = formData.get('challenge_id') as string;
   const completed = formData.get('completed') === 'on';
-  const completionPath = (formData.get('completion_path') as string | null) ?? null;
-  const followupPath = completionPath && completionPath.length > 0 ? completionPath : null;
 
   const supabase = getServerClient();
   const {
@@ -36,6 +34,10 @@ async function toggleCompletion(_: CompletionFormState, formData: FormData): Pro
     if (challengeError || !challenge) {
       return { status: 'error', message: 'Challenge not found or unavailable.' };
     }
+
+    const followupPath = challenge.completion_path && challenge.completion_path.length > 0
+      ? challenge.completion_path
+      : null;
 
     const cutoff = addDays(new Date(challenge.end_date), 7);
     if (new Date() > cutoff) {
